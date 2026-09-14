@@ -13,3 +13,8 @@ PythonProject555 - это веб-приложение на Python
 2. Для использования модуля "masks" нужно подать в функции номер карты или номер счёта,
 а также дату.
 3. Для использования модуля "processing" нужно подать в функции словари с данными.
+
+## Тестирование:
+1. test_masks - тестирует функции: get_mask_card_number, get_mask_account.
+2. test_widget - тестирует функции: mask_account_card, get_date.
+3. test_processing - тестирует функции: filter_by_state, sort_by_date.
