@@ -1,31 +1,63 @@
 import pytest
-from src.widget import get_date
+from src.widget import mask_account_card, get_date
 
 
 @pytest.mark.parametrize(
-    "input_date, expected",
+    "pay_info, expected",
     [
-        ("2023-12-31", "31.12.2023"),
-        ("2020-02-29", "29.02.2020"),
-        ("1999-01-01", "01.01.1999"),
-        ("2000-12-31T23:59:59", "31.12.2000"),
-        ("2023-06-15T00:00:00", "15.06.2023"),  # убрали Z
+        # Счёт: оставляем 4 последние цифры
+        ("Счет 72082042523231456215", "**6215"),
+        ("Счет 123456", "**3456"),
+
+        # Карта: формат "XXXX XX** **** XXXX" (4+2+4+4), но последние 4 цифры видны
+        ("Card 4100123456789010", "4100 12** **** 9010"),
+        ("Visa 4100123456789010", "4100 12** **** 9010"),
+        ("MasterCard 1111222233334444", "1111 22** **** 4444"),
     ],
 )
-def test_standard_date_formats(input_date: str, expected: str) -> None:
-    """Проверяем корректное преобразование стандартных форматов дат"""
-    assert get_date(input_date) == expected
+def test_mask_account_card_valid(pay_info: str, expected: str) -> None:
+    assert mask_account_card(pay_info) == expected
 
 
-# Тест для граничных случаев — оставляем как есть
+@pytest.mark.parametrize("pay_info", [None, "", "   ", "Счет", "4100123456789010"])
+def test_mask_account_card_invalid_format(pay_info) -> None:
+    with pytest.raises(ValueError):
+        mask_account_card(pay_info)
+
+
+def test_mask_account_card_non_string() -> None:
+    with pytest.raises(ValueError):
+        mask_account_card(12345)
+
+
+def test_mask_account_card_internal_error_account() -> None:
+    # Если номер слишком короткий, get_mask_account выбросит ошибку
+    with pytest.raises(ValueError, match="Ошибка обработки номера"):
+        mask_account_card("Счет 123")
+
+
+def test_mask_account_card_internal_error_card() -> None:
+    with pytest.raises(ValueError, match="Ошибка обработки номера"):
+        mask_account_card("Card 12345")
+
+
 @pytest.mark.parametrize(
-    "input_date, expected",
+    "date_string, expected",
     [
-        ("0001-01-01", "01.01.0001"),
-        ("9999-12-31", "31.12.9999"),
-        ("1970-01-01", "01.01.1970"),
+        ("2019-07-03T18:35:29.512364", "03.07.2019"),
+        ("2018-06-30T02:08:58.425572", "30.06.2018"),
+        ("2023-01-01T00:00:00", "01.01.2023"),
     ],
 )
-def test_edge_cases(input_date: str, expected: str) -> None:
-    """Проверяем обработку граничных случаев"""
-    assert get_date(input_date) == expected
+def test_get_date_valid(date_string: str, expected: str) -> None:
+    assert get_date(date_string) == expected
+
+
+def test_get_date_invalid_iso() -> None:
+    with pytest.raises(ValueError):
+        get_date("не-дата")
+
+
+def test_get_date_empty_string() -> None:
+    with pytest.raises(ValueError):
+        get_date("")

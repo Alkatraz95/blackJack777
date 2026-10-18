@@ -33,7 +33,7 @@ def sort_by_date(
     )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     transactions = [
         {
             "id": 596171168,
