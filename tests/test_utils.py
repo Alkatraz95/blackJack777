@@ -1,36 +1,40 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from src.utils import convert_currency
 
 
-@patch('src.utils.requests.get')
-def test_convert_currency_success(mock_get):
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"rates": {"USD": 1.2}}
-    mock_response.raise_for_status.return_value = None
-    mock_get.return_value = mock_response
+def test_convert_currency_success():
+    # Базовые проверки
+    assert convert_currency(90, "RUB", "USD") == 1.0
+    assert convert_currency(180, "RUB", "USD") == 2.0
 
-    result = convert_currency(100, "EUR", "USD")
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(120.0)
-    mock_get.assert_called_once()
+    # Проверка конвертации между другими валютами (через USD)
+    # 90 RUB → 1 USD → 0.85 EUR
+    result = convert_currency(90, "RUB", "EUR")
+    expected = 90 / 90 * 0.85  # 0.85
+    assert result == pytest.approx(expected, rel=1e-3)
 
 
-@patch('src.utils.requests.get')
-def test_convert_currency_missing_currency(mock_get):
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"rates": {}}
-    mock_response.raise_for_status.return_value = None
-    mock_get.return_value = mock_response
+def test_convert_currency_missing_currency():
+    with pytest.raises(ValueError) as exc_info:
+        convert_currency(100, "XYZ", "USD")
+    assert "Неизвестный код валюты" in str(exc_info.value)
 
-    with pytest.raises(ValueError):
-        convert_currency(100, "EUR", "XYZ")
+    with pytest.raises(ValueError) as exc_info:
+        convert_currency(100, "RUB", "ABC")
+    assert "Неизвестный код валюты" in str(exc_info.value)
 
 
-@patch('src.utils.requests.get')
-def test_convert_currency_network_error(mock_get):
-    mock_get.side_effect = Exception("Network error")
+def test_convert_currency_edge_cases():
+    # Ноль — всегда 0.0
+    assert convert_currency(0, "RUB", "USD") == 0.0
 
-    with pytest.raises(Exception):
-        convert_currency(100, "EUR", "USD")
+    # Очень маленькое число: из-за round(..., 2) результат будет 0.0
+    # Это ожидаемое поведение функции
+    assert convert_currency(0.01, "RUB", "USD") == pytest.approx(0.0, rel=1e-3)
+
+    # Число, которое после конвертации и округления даст заметный результат
+    # 1 RUB → 1/90 ≈ 0.0111 → round до 0.01
+    assert convert_currency(1, "RUB", "USD") == pytest.approx(0.01, rel=1e-2)
+
+    # Ещё одна проверка: 50 RUB → 50/90 ≈ 0.555 → round до 0.56
+    assert convert_currency(50, "RUB", "USD") == pytest.approx(0.56, rel=1e-2)
