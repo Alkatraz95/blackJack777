@@ -46,7 +46,10 @@ def test_divide_zero(capsys):
         divide(10, 0)
     captured = capsys.readouterr()
     assert "Начало выполнения функции: divide" in captured.out
-    assert "Функция: divide, Ошибка: ZeroDivisionError, Параметры: (10, 0), {}" in captured.out
+    assert (
+        "Функция: divide, Ошибка: ZeroDivisionError, Параметры: (10, 0), {}"
+        in captured.out
+    )
     assert "Конец выполнения функции: divide" in captured.out
 
 
