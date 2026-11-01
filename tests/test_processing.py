@@ -1,5 +1,4 @@
 import pytest
-
 from src.processing import filter_by_state, sort_by_date
 
 
@@ -30,7 +29,6 @@ def sample_data():
 
 
 # --- filter_by_state ---
-
 
 def test_filter_by_state_executed(sample_data):
     result = filter_by_state(sample_data, "EXECUTED")
@@ -63,7 +61,6 @@ def test_filter_by_state_non_dict_items():
 
 # --- sort_by_date: нормальные случаи ---
 
-
 def test_sort_by_date_normal_desc(sample_data):
     # По умолчанию reverse=True — самые свежие первыми
     result = sort_by_date(sample_data)
@@ -94,7 +91,6 @@ def test_sort_by_date_single_item():
 
 
 # --- sort_by_date: валидация и ошибки ---
-
 
 def test_sort_by_date_missing_date_key():
     bad_data = [
