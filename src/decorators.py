@@ -2,11 +2,7 @@ import datetime
 
 
 def log(filename=None):
-    """Декоратор для логирования выполнения функции.
-
-    Аргумент filename — путь к файлу, в который записываются логи.
-    Если filename не передан, логи выводятся на консоль.
-    """
+    """Декоратор для логирования выполнения функции."""
 
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -15,22 +11,16 @@ def log(filename=None):
             try:
                 result = func(*args, **kwargs)
                 end_time = datetime.datetime.now()
-                log_message += (
-                    f"[{end_time}] Функция: {func.__name__}, Результат: {result}\n"
-                )
+                log_message += f"[{end_time}] Функция: {func.__name__}, Результат: {result}\n"
                 return result
             except Exception as e:
                 end_time = datetime.datetime.now()
                 log_message += (
-                    f"[{end_time}] Функция: {func.__name__}, "
-                    f"Ошибка: {type(e).__name__}, "
-                    f"Параметры: {args}, {kwargs}\n"
+                    f"[{end_time}] Функция: {func.__name__}, Ошибка: {type(e).__name__}, Параметры: {args}, {kwargs}\n"
                 )
                 raise
             finally:
-                log_message += (
-                    f"[{end_time}] Конец выполнения функции: {func.__name__}\n"
-                )
+                log_message += f"[{end_time}] Конец выполнения функции: {func.__name__}\n"
                 # Запись логов в файл или вывод на консоль
                 if filename:
                     with open(filename, "a") as log_file:
@@ -41,3 +31,26 @@ def log(filename=None):
         return wrapper
 
     return decorator
+
+
+@log(filename="mylog.txt")
+def my_function(x, y):
+    return x + y
+
+
+my_function(1, 2)
+
+
+@log(filename=None)
+def my_function(x, y):
+    return x + y
+
+
+my_function(1, 2)
+
+
+# python src/decorators.py
+# black src/decorators.py
+# flake8 src/decorators.py
+# mypy src/decorators.py
+# isort src/decorators.py
