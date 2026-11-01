@@ -1,21 +1,26 @@
-import json
-from typing import Any, Dict, List
+import requests
 
-
-def read_transactions(file_path: str) -> List[Dict[str, Any]]:
-    """Читает JSON-файл со списком транзакций.
-
-    Возвращает список словарей. При любой ошибке (файл не найден,
-    битый JSON, пустой файл, объект вместо списка) возвращает [].
+def convert_currency(amount, from_currency, to_currency):
     """
-    try:
-        # utf-8-sig автоматически игнорирует BOM, если он есть в файле
-        with open(file_path, "r", encoding="utf-8-sig") as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return []
+    Конвертирует сумму из одной валюты в другую через API.
+    Возвращает результат как float.
 
-    if not isinstance(data, list):
-        return []
+    Raises:
+        ValueError: если курс для целевой валюты не найден.
+        requests.RequestException: при ошибках сети/API.
+    """
+    url = "https://api.exchangerate-api.com/v4/latest"
+    base = from_currency
 
-    return [item for item in data if isinstance(item, dict)]
+    response = requests.get(f"{url}/{base}", timeout=5)
+    response.raise_for_status()
+    data = response.json()
+
+    rates = data.get("rates", {})
+    if to_currency not in rates:
+        raise ValueError(f"Курс для валюты {to_currency} не найден")
+
+    rate = rates[to_currency]
+    converted = amount * rate
+
+    return float(converted)
