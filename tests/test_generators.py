@@ -1,6 +1,7 @@
 import pytest
 
-from src.generators import filter_by_currency, transaction_descriptions, card_number_generator
+from src.generators import (card_number_generator, filter_by_currency,
+                            transaction_descriptions)
 
 
 @pytest.fixture
@@ -10,7 +11,10 @@ def valid_filter_by_currency():
             "id": 939719570,
             "state": "EXECUTED",
             "date": "2018-06-30T02:08:58.425572",
-            "operationAmount": {"amount": "9824.07", "currency": {"name": "USD", "code": "USD"}},
+            "operationAmount": {
+                "amount": "9824.07",
+                "currency": {"name": "USD", "code": "USD"},
+            },
             "description": "Перевод организации",
             "from": "Счет 75106830613657916952",
             "to": "Счет 11776614605963066702",
@@ -19,7 +23,10 @@ def valid_filter_by_currency():
             "id": 142264268,
             "state": "EXECUTED",
             "date": "2019-04-04T23:20:05.206878",
-            "operationAmount": {"amount": "79114.93", "currency": {"name": "USD", "code": "USD"}},
+            "operationAmount": {
+                "amount": "79114.93",
+                "currency": {"name": "USD", "code": "USD"},
+            },
             "description": "Перевод со счета на счет",
             "from": "Счет 19708645243227258542",
             "to": "Счет 75651667383060284188",
@@ -28,7 +35,10 @@ def valid_filter_by_currency():
             "id": 873106923,
             "state": "EXECUTED",
             "date": "2019-03-23T01:09:46.296404",
-            "operationAmount": {"amount": "43318.34", "currency": {"name": "руб.", "code": "RUB"}},
+            "operationAmount": {
+                "amount": "43318.34",
+                "currency": {"name": "руб.", "code": "RUB"},
+            },
             "description": "Перевод со счета на счет",
             "from": "Счет 44812258784861134719",
             "to": "Счет 74489636417521191160",
@@ -37,7 +47,10 @@ def valid_filter_by_currency():
             "id": 895315941,
             "state": "EXECUTED",
             "date": "2018-08-19T04:27:37.904916",
-            "operationAmount": {"amount": "56883.54", "currency": {"name": "USD", "code": "USD"}},
+            "operationAmount": {
+                "amount": "56883.54",
+                "currency": {"name": "USD", "code": "USD"},
+            },
             "description": "Перевод с карты на карту",
             "from": "Visa Classic 6831982476737658",
             "to": "Visa Platinum 8990922113665229",
@@ -46,7 +59,10 @@ def valid_filter_by_currency():
             "id": 594226727,
             "state": "CANCELED",
             "date": "2018-09-12T21:27:25.241689",
-            "operationAmount": {"amount": "67314.70", "currency": {"name": "руб.", "code": "RUB"}},
+            "operationAmount": {
+                "amount": "67314.70",
+                "currency": {"name": "руб.", "code": "RUB"},
+            },
             "description": "Перевод организации",
             "from": "Visa Platinum 1246377376343588",
             "to": "Счет 14211924144426031657",
@@ -61,7 +77,10 @@ def expected_filter_by_currency():
             "id": 939719570,
             "state": "EXECUTED",
             "date": "2018-06-30T02:08:58.425572",
-            "operationAmount": {"amount": "9824.07", "currency": {"name": "USD", "code": "USD"}},
+            "operationAmount": {
+                "amount": "9824.07",
+                "currency": {"name": "USD", "code": "USD"},
+            },
             "description": "Перевод организации",
             "from": "Счет 75106830613657916952",
             "to": "Счет 11776614605963066702",
@@ -70,7 +89,10 @@ def expected_filter_by_currency():
             "id": 142264268,
             "state": "EXECUTED",
             "date": "2019-04-04T23:20:05.206878",
-            "operationAmount": {"amount": "79114.93", "currency": {"name": "USD", "code": "USD"}},
+            "operationAmount": {
+                "amount": "79114.93",
+                "currency": {"name": "USD", "code": "USD"},
+            },
             "description": "Перевод со счета на счет",
             "from": "Счет 19708645243227258542",
             "to": "Счет 75651667383060284188",
@@ -79,7 +101,10 @@ def expected_filter_by_currency():
             "id": 895315941,
             "state": "EXECUTED",
             "date": "2018-08-19T04:27:37.904916",
-            "operationAmount": {"amount": "56883.54", "currency": {"name": "USD", "code": "USD"}},
+            "operationAmount": {
+                "amount": "56883.54",
+                "currency": {"name": "USD", "code": "USD"},
+            },
             "description": "Перевод с карты на карту",
             "from": "Visa Classic 6831982476737658",
             "to": "Visa Platinum 8990922113665229",
@@ -87,7 +112,9 @@ def expected_filter_by_currency():
     ]
 
 
-def test_valid_filter_by_currency(valid_filter_by_currency, expected_filter_by_currency):
+def test_valid_filter_by_currency(
+    valid_filter_by_currency, expected_filter_by_currency
+):
     filtered_transactions = list(filter_by_currency(valid_filter_by_currency, "USD"))
     assert filtered_transactions == expected_filter_by_currency
 
@@ -99,7 +126,10 @@ def invalid_filter_by_currency():
             "id": 873106923,
             "state": "EXECUTED",
             "date": "2019-03-23T01:09:46.296404",
-            "operationAmount": {"amount": "43318.34", "currency": {"name": "руб.", "code": "RUB"}},
+            "operationAmount": {
+                "amount": "43318.34",
+                "currency": {"name": "руб.", "code": "RUB"},
+            },
             "description": "Перевод со счета на счет",
             "from": "Счет 44812258784861134719",
             "to": "Счет 74489636417521191160",
@@ -108,7 +138,10 @@ def invalid_filter_by_currency():
             "id": 594226727,
             "state": "CANCELED",
             "date": "2018-09-12T21:27:25.241689",
-            "operationAmount": {"amount": "67314.70", "currency": {"name": "руб.", "code": "RUB"}},
+            "operationAmount": {
+                "amount": "67314.70",
+                "currency": {"name": "руб.", "code": "RUB"},
+            },
             "description": "Перевод организации",
             "from": "Visa Platinum 1246377376343588",
             "to": "Счет 14211924144426031657",
@@ -130,7 +163,10 @@ def test_invalid_filter_by_currency(invalid_filter_by_currency):
                     "id": 939719570,
                     "state": "EXECUTED",
                     "date": "2018-06-30T02:08:58.425572",
-                    "operationAmount": {"amount": "9824.07", "currency": {"name": "USD", "code": "USD"}},
+                    "operationAmount": {
+                        "amount": "9824.07",
+                        "currency": {"name": "USD", "code": "USD"},
+                    },
                     "description": "Перевод организации",
                     "from": "Счет 75106830613657916952",
                     "to": "Счет 11776614605963066702",
@@ -144,7 +180,10 @@ def test_invalid_filter_by_currency(invalid_filter_by_currency):
                     "id": 142264268,
                     "state": "EXECUTED",
                     "date": "2019-04-04T23:20:05.206878",
-                    "operationAmount": {"amount": "79114.93", "currency": {"name": "USD", "code": "USD"}},
+                    "operationAmount": {
+                        "amount": "79114.93",
+                        "currency": {"name": "USD", "code": "USD"},
+                    },
                     "description": "Перевод со счета на счет",
                     "from": "Счет 19708645243227258542",
                     "to": "Счет 75651667383060284188",
@@ -158,7 +197,10 @@ def test_invalid_filter_by_currency(invalid_filter_by_currency):
                     "id": 873106923,
                     "state": "EXECUTED",
                     "date": "2019-03-23T01:09:46.296404",
-                    "operationAmount": {"amount": "43318.34", "currency": {"name": "руб.", "code": "RUB"}},
+                    "operationAmount": {
+                        "amount": "43318.34",
+                        "currency": {"name": "руб.", "code": "RUB"},
+                    },
                     "description": "Перевод со счета на счет",
                     "from": "Счет 44812258784861134719",
                     "to": "Счет 74489636417521191160",
@@ -172,7 +214,10 @@ def test_invalid_filter_by_currency(invalid_filter_by_currency):
                     "id": 895315941,
                     "state": "EXECUTED",
                     "date": "2018-08-19T04:27:37.904916",
-                    "operationAmount": {"amount": "56883.54", "currency": {"name": "USD", "code": "USD"}},
+                    "operationAmount": {
+                        "amount": "56883.54",
+                        "currency": {"name": "USD", "code": "USD"},
+                    },
                     "description": "Перевод с карты на карту",
                     "from": "Visa Classic 6831982476737658",
                     "to": "Visa Platinum 8990922113665229",
@@ -186,7 +231,10 @@ def test_invalid_filter_by_currency(invalid_filter_by_currency):
                     "id": 594226727,
                     "state": "CANCELED",
                     "date": "2018-09-12T21:27:25.241689",
-                    "operationAmount": {"amount": "67314.70", "currency": {"name": "руб.", "code": "RUB"}},
+                    "operationAmount": {
+                        "amount": "67314.70",
+                        "currency": {"name": "руб.", "code": "RUB"},
+                    },
                     "description": "Перевод организации",
                     "from": "Visa Platinum 1246377376343588",
                     "to": "Счет 14211924144426031657",
@@ -211,7 +259,10 @@ def test_transaction_descriptions(transactions, expected):
                     "id": 939719570,
                     "state": "EXECUTED",
                     "date": "2018-06-30T02:08:58.425572",
-                    "operationAmount": {"amount": "9824.07", "currency": {"name": "USD", "code": "USD"}},
+                    "operationAmount": {
+                        "amount": "9824.07",
+                        "currency": {"name": "USD", "code": "USD"},
+                    },
                     "description": "Перевод организации",
                     "from": "Счет 75106830613657916952",
                     "to": "Счет 11776614605963066702",
@@ -225,7 +276,10 @@ def test_transaction_descriptions(transactions, expected):
                     "id": 142264268,
                     "state": "EXECUTED",
                     "date": "2019-04-04T23:20:05.206878",
-                    "operationAmount": {"amount": "79114.93", "currency": {"name": "USD", "code": "USD"}},
+                    "operationAmount": {
+                        "amount": "79114.93",
+                        "currency": {"name": "USD", "code": "USD"},
+                    },
                     "description": "Перевод со счета на счет",
                     "from": "Счет 19708645243227258542",
                     "to": "Счет 75651667383060284188",
@@ -234,7 +288,10 @@ def test_transaction_descriptions(transactions, expected):
                     "id": 873106923,
                     "state": "EXECUTED",
                     "date": "2019-03-23T01:09:46.296404",
-                    "operationAmount": {"amount": "43318.34", "currency": {"name": "руб.", "code": "RUB"}},
+                    "operationAmount": {
+                        "amount": "43318.34",
+                        "currency": {"name": "руб.", "code": "RUB"},
+                    },
                     "description": "Перевод со счета на счет",
                     "from": "Счет 44812258784861134719",
                     "to": "Счет 74489636417521191160",
@@ -281,6 +338,6 @@ def test_transaction_descriptions_01(transactions, expected):
 )
 def test_card_number_generator(start, end, expected_numbers):
     generated_numbers = list(card_number_generator(start, end))
-    assert generated_numbers == expected_numbers  # Проверка на соответствие с ожидаемыми номерами
-
-
+    assert (
+        generated_numbers == expected_numbers
+    )  # Проверка на соответствие с ожидаемыми номерами

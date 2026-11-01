@@ -1,5 +1,6 @@
 import pytest
-from src.widget import mask_account_card, get_date
+
+from src.widget import get_date, mask_account_card
 
 
 @pytest.mark.parametrize(
@@ -8,7 +9,6 @@ from src.widget import mask_account_card, get_date
         # Счёт: оставляем 4 последние цифры
         ("Счет 72082042523231456215", "**6215"),
         ("Счет 123456", "**3456"),
-
         # Карта: формат "XXXX XX** **** XXXX" (4+2+4+4), но последние 4 цифры видны
         ("Card 4100123456789010", "4100 12** **** 9010"),
         ("Visa 4100123456789010", "4100 12** **** 9010"),
