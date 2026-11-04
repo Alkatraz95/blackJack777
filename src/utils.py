@@ -1,80 +1,79 @@
-import datetime
-from typing import Optional
-import logging
+import json
+import os
+from typing import Any, Dict, List
 
-try:
-    from .logger_config import get_module_logger
-
-    logger = get_module_logger("utils")
-except ImportError:
-    # Если logger_config нет, создаём простой логгер в консоль
-    logger = logging.getLogger("utils")
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+import requests
+from dotenv import load_dotenv
 
 
-def convert_currency(amount: float, from_currency: str, to_currency: str) -> float:
+load_dotenv()
+
+API_KEY = os.getenv("API_KEY")
+
+
+def read_json_file(path: str) -> List[Dict[str, Any]]:
     """
-    Конвертирует сумму из одной валюты в другую.
+    Читает JSON-файл и возвращает список словарей с транзакциями.
 
-    Для домашнего задания используем фиксированные курсы, чтобы тесты были стабильными.
-    Результат округляется до 2 знаков после запятой.
+    Если файл не найден, содержит не список или повреждён — возвращается пустой список.
+
+    Args:
+        path: путь к JSON-файлу с данными о финансовых операциях.
+
+    Returns:
+        list: список словарей с транзакциями или пустой список при ошибках.
     """
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
-    rates = {
-        "USD": 1.0,
-        "EUR": 0.85,
-        "RUB": 90.0,
-        "BYN": 2.5,
-    }
+    if not isinstance(data, list):
+        return []
 
-    if from_currency not in rates or to_currency not in rates:
-        logger.error("Неизвестный код валюты: %s или %s", from_currency, to_currency)
-        raise ValueError(f"Неизвестный код валюты: {from_currency} или {to_currency}")
-
-    # Конвертация через USD как промежуточную валюту
-    amount_in_usd = amount / rates[from_currency]
-    result = amount_in_usd * rates[to_currency]
-
-    logger.info(
-        "Конвертация: %.2f %s → %.2f %s (курс: %.4f)",
-        amount,
-        from_currency,
-        result,
-        to_currency,
-        rates[to_currency],
-    )
-
-    # Округляем до 2 знаков, как и было задумано
-    return round(result, 2)
+    return data
 
 
-def log_execution(func):
-    """Декоратор для логирования времени выполнения функции."""
+def convert_transaction_to_rub(transaction: Dict[str, Any]) -> float:
+    """
+    Конвертирует сумму транзакции в рубли.
 
-    def wrapper(*args, **kwargs):
-        start_time = datetime.datetime.now()
-        logger.debug("[%s] Начало выполнения: %s", start_time, func.__name__)
-        try:
-            result = func(*args, **kwargs)
-            end_time = datetime.datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            logger.debug(
-                "[%s] Завершено: %s, длительность: %.3f сек",
-                end_time,
-                func.__name__,
-                duration,
-            )
-            return result
-        except Exception as e:
-            end_time = datetime.datetime.now()
-            logger.exception("[%s] Ошибка в %s: %s", end_time, func.__name__, e)
-            raise
+    Для USD и EUR запрашивает курс через внешний API. Для RUB возвращает сумму как есть.
+    При неподдерживаемой валюте выбрасывает ValueError.
 
-    return wrapper
+    Args:
+        transaction: словарь с транзакцией, должен содержать ключи:
+            - "amount": сумма (число или строка, приводимая к float)
+            - "currency": код валюты (USD, EUR, RUB)
+
+    Returns:
+        float: сумма транзакции в рублях, округлённая до 2 знаков.
+
+    Raises:
+        ValueError: если валюта не поддерживается.
+    """
+    currency_code = transaction.get("currency", "RUB")
+    try:
+        amount = float(transaction["amount"])
+    except (TypeError, ValueError):
+        amount = 0.0
+
+    if currency_code == "RUB":
+        return round(amount, 2)
+
+    if currency_code not in ("USD", "EUR"):
+        raise ValueError(f"Валюта {currency_code} не поддерживается")
+
+    url = "https://api.apilayer.com/exchangerates_data/convert"
+    headers = {"apikey": API_KEY}
+    params = {"from": currency_code, "to": "RUB", "amount": amount}
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+    response.raise_for_status()
+
+    result = response.json().get("result")
+    if result is None:
+        raise ValueError("Не удалось получить результат конвертации из ответа API")
+
+    return round(float(result), 2)
