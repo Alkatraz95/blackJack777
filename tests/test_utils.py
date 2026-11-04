@@ -1,40 +1,95 @@
+"""Тесты утилит чтения файла и конвертации."""
+
+import json
+import os
+from unittest.mock import patch
+
 import pytest
-from src.utils import convert_currency
+
+from src.utils import convert_transaction_to_rub, read_json_file
 
 
-def test_convert_currency_success():
-    # Базовые проверки
-    assert convert_currency(90, "RUB", "USD") == 1.0
-    assert convert_currency(180, "RUB", "USD") == 2.0
+# --- read_json_file ---
 
-    # Проверка конвертации между другими валютами (через USD)
-    # 90 RUB → 1 USD → 0.85 EUR
-    result = convert_currency(90, "RUB", "EUR")
-    expected = 90 / 90 * 0.85  # 0.85
-    assert result == pytest.approx(expected, rel=1e-3)
+def test_read_json_file_valid(tmp_path):
+    file = tmp_path / "operations.json"
+    file.write_text(json.dumps([{"id": 1, "state": "EXECUTED"}]), encoding="utf-8")
+    assert read_json_file(str(file)) == [{"id": 1, "state": "EXECUTED"}]
 
 
-def test_convert_currency_missing_currency():
-    with pytest.raises(ValueError) as exc_info:
-        convert_currency(100, "XYZ", "USD")
-    assert "Неизвестный код валюты" in str(exc_info.value)
-
-    with pytest.raises(ValueError) as exc_info:
-        convert_currency(100, "RUB", "ABC")
-    assert "Неизвестный код валюты" in str(exc_info.value)
+def test_read_json_file_not_found():
+    assert read_json_file("no_such_file.json") == []
 
 
-def test_convert_currency_edge_cases():
-    # Ноль — всегда 0.0
-    assert convert_currency(0, "RUB", "USD") == 0.0
+def test_read_json_file_invalid_json(tmp_path):
+    file = tmp_path / "bad.json"
+    file.write_text("{не json}", encoding="utf-8")
+    assert read_json_file(str(file)) == []
 
-    # Очень маленькое число: из-за round(..., 2) результат будет 0.0
-    # Это ожидаемое поведение функции
-    assert convert_currency(0.01, "RUB", "USD") == pytest.approx(0.0, rel=1e-3)
 
-    # Число, которое после конвертации и округления даст заметный результат
-    # 1 RUB → 1/90 ≈ 0.0111 → round до 0.01
-    assert convert_currency(1, "RUB", "USD") == pytest.approx(0.01, rel=1e-2)
+def test_read_json_file_empty(tmp_path):
+    file = tmp_path / "empty.json"
+    file.write_text("[]", encoding="utf-8")
+    assert read_json_file(str(file)) == []
 
-    # Ещё одна проверка: 50 RUB → 50/90 ≈ 0.555 → round до 0.56
-    assert convert_currency(50, "RUB", "USD") == pytest.approx(0.56, rel=1e-2)
+
+def test_read_json_file_not_a_list(tmp_path):
+    file = tmp_path / "dict.json"
+    file.write_text('{"key": "value"}', encoding="utf-8")
+    assert read_json_file(str(file)) == []
+
+
+# --- convert_transaction_to_rub ---
+
+def test_convert_rub_no_api_call():
+    transaction = {
+        "operationAmount": {
+            "amount": "1000.0",
+            "currency": {"name": "руб.", "code": "RUB"},
+        }
+    }
+    with patch("src.utils.requests.get") as mock_get:
+        assert convert_transaction_to_rub(transaction) == 1000.0
+        mock_get.assert_not_called()
+
+
+@patch.dict(os.environ, {"API_KEY": "test-key"})
+@patch("src.utils.requests.get")
+def test_convert_usd(mock_get):
+    mock_get.return_value.json.return_value = {"rates": {"RUB": 90.0}}
+    mock_get.return_value.status_code = 200
+
+    transaction = {
+        "operationAmount": {
+            "amount": "100.0",
+            "currency": {"name": "USD", "code": "USD"},
+        }
+    }
+    assert convert_transaction_to_rub(transaction) == 9000.0
+    mock_get.assert_called_once()
+
+
+@patch.dict(os.environ, {"API_KEY": "test-key"})
+@patch("src.utils.requests.get")
+def test_convert_eur(mock_get):
+    mock_get.return_value.json.return_value = {"rates": {"RUB": 100.0}}
+    mock_get.return_value.status_code = 200
+
+    transaction = {
+        "operationAmount": {
+            "amount": "50.0",
+            "currency": {"name": "EUR", "code": "EUR"},
+        }
+    }
+    assert convert_transaction_to_rub(transaction) == 5000.0
+
+
+def test_convert_unsupported_currency():
+    transaction = {
+        "operationAmount": {
+            "amount": "100",
+            "currency": {"name": "GBP", "code": "GBP"},
+        }
+    }
+    with pytest.raises(ValueError):
+        convert_transaction_to_rub(transaction)

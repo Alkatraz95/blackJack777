@@ -1,4 +1,4 @@
-from masks.masks import logger, apply_mask
+from masks.masks import apply_mask, logger
 
 
 def test_logger_creates_file():
