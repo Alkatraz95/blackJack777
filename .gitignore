@@ -1,4 +1,7 @@
-﻿# Виртуальное окружение и зависимости
+﻿# Секреты
+.env
+
+# Виртуальное окружение и зависимости
 .venv/
 .idea/
 __pycache__/
@@ -15,3 +18,18 @@ mylog.txt
 # Системные файлы
 .DS_Store
 Thumbs.db
+.coverage
+.coverage.*
+htmlcov/
+
+# Результаты сборки
+dist/
+build/
+
+# Файлы IDE
+*.iml
+.idea/
+.vscode/
+
+# Отладочные файлы
+debug.log
