@@ -1,80 +1,84 @@
-import datetime
-from typing import Optional
-import logging
+"""Утилиты для работы с файлом транзакций и конвертацией валют."""
 
-try:
-    from .logger_config import get_module_logger
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
-    logger = get_module_logger("utils")
-except ImportError:
-    # Если logger_config нет, создаём простой логгер в консоль
-    logger = logging.getLogger("utils")
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+import requests
+from dotenv import load_dotenv
 
 
-def convert_currency(amount: float, from_currency: str, to_currency: str) -> float:
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+PATH_TO_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "operations.json")
+BASE_URL = "https://api.apilayer.com/exchangerates_data/latest"
+SUPPORTED_CURRENCIES = {"RUB", "USD", "EUR"}
+
+
+def read_json_file(path_to_file: str = PATH_TO_FILE) -> List[Dict[str, Any]]:
+    """Читает JSON-файл и возвращает список транзакций.
+
+    Args:
+        path_to_file: путь к JSON-файлу.
+
+    Returns:
+        Список словарей с транзакциями. Если файла нет или JSON некорректен — [].
     """
-    Конвертирует сумму из одной валюты в другую.
+    try:
+        with open(path_to_file, "r", encoding="utf-8") as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return data
 
-    Для домашнего задания используем фиксированные курсы, чтобы тесты были стабильными.
-    Результат округляется до 2 знаков после запятой.
+
+def _extract_amount_and_code(transaction: Dict[str, Any]) -> Tuple[Any, Any]:
+    """Достаёт сумму и код валюты из вложенной структуры."""
+    operation = transaction.get("operationAmount", {})
+    amount = operation.get("amount")
+    code = operation.get("currency", {}).get("code")
+    return amount, code
+
+
+def convert_transaction_to_rub(transaction: Dict[str, Any]) -> float:
+    """Конвертирует сумму транзакции в рубли.
+
+    Для RUB возвращает сумму без запроса к API.
+    Для USD и EUR запрашивает курс через внешний API.
+
+    Args:
+        transaction: словарь с данными транзакции.
+
+    Returns:
+        Сумма в рублях, округлённая до 2 знаков.
     """
+    amount, code = _extract_amount_and_code(transaction)
 
-    rates = {
-        "USD": 1.0,
-        "EUR": 0.85,
-        "RUB": 90.0,
-        "BYN": 2.5,
-    }
+    if amount is None or code is None:
+        raise ValueError("В транзакции отсутствует сумма или валюта")
 
-    if from_currency not in rates or to_currency not in rates:
-        logger.error("Неизвестный код валюты: %s или %s", from_currency, to_currency)
-        raise ValueError(f"Неизвестный код валюты: {from_currency} или {to_currency}")
+    amount = float(amount)
 
-    # Конвертация через USD как промежуточную валюту
-    amount_in_usd = amount / rates[from_currency]
-    result = amount_in_usd * rates[to_currency]
+    if code == "RUB":
+        return round(amount, 2)
 
-    logger.info(
-        "Конвертация: %.2f %s → %.2f %s (курс: %.4f)",
-        amount,
-        from_currency,
-        result,
-        to_currency,
-        rates[to_currency],
+    if code not in SUPPORTED_CURRENCIES:
+        raise ValueError(f"Неподдерживаемая валюта: {code}")
+
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        raise ValueError("Не задан API_KEY в переменных окружения")
+
+    response = requests.get(
+        BASE_URL,
+        params={"base": code, "symbols": "RUB"},
+        headers={"apikey": api_key},
+        timeout=10,
     )
+    response.raise_for_status()
+    rate = response.json()["rates"]["RUB"]
 
-    # Округляем до 2 знаков, как и было задумано
-    return round(result, 2)
-
-
-def log_execution(func):
-    """Декоратор для логирования времени выполнения функции."""
-
-    def wrapper(*args, **kwargs):
-        start_time = datetime.datetime.now()
-        logger.debug("[%s] Начало выполнения: %s", start_time, func.__name__)
-        try:
-            result = func(*args, **kwargs)
-            end_time = datetime.datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            logger.debug(
-                "[%s] Завершено: %s, длительность: %.3f сек",
-                end_time,
-                func.__name__,
-                duration,
-            )
-            return result
-        except Exception as e:
-            end_time = datetime.datetime.now()
-            logger.exception("[%s] Ошибка в %s: %s", end_time, func.__name__, e)
-            raise
-
-    return wrapper
+    return round(amount * rate, 2)

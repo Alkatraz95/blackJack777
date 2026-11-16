@@ -1,5 +1,6 @@
 from src.logger_config import get_module_logger
 
+
 # Инициализируем логгер для модуля masks
 logger = get_module_logger("masks")
 
