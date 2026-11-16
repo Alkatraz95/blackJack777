@@ -6,9 +6,33 @@ from src.readers import (read_transactions_from_csv,
                          read_transactions_from_excel)
 from src.search import process_bank_search
 from src.utils import read_json_file
+from src.widget import get_date, mask_account_card
 
 
 VALID_STATUSES = {"EXECUTED", "CANCELED", "PENDING"}
+
+
+def format_route(transaction: dict[str, Any]) -> str:
+    """Формирует строку перевода с маскированными реквизитами."""
+    parts = []
+    for key in ("from", "to"):
+        value = str(transaction.get(key, "") or "")
+        if not value:
+            continue
+        try:
+            masked = mask_account_card(value)
+            if value.split()[0] == "Счет" and not masked.startswith("Счет"):
+                masked = f"Счет {masked}"
+            parts.append(masked)
+        except ValueError:
+            parts.append(value)
+    return " -> ".join(parts)
+
+
+def format_currency(name: Any) -> str:
+    """Возвращает название валюты в формате задания."""
+    value = str(name)
+    return "руб." if value.upper() == "RUB" else value
 
 
 def filter_by_status(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -20,7 +44,8 @@ def filter_by_status(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]
         ).strip().upper()
         if status in VALID_STATUSES:
             print(f'Операции отфильтрованы по статусу "{status}"')
-            return [t for t in transactions if str(t.get("state", "")).upper() == status]
+            return [t for t in transactions
+                    if str(t.get("state", "")).upper() == status]
         print(f'Статус операции "{status}" недоступен.')
 
 
@@ -30,8 +55,10 @@ def sort_transactions(transactions: list[dict[str, Any]]) -> list[dict[str, Any]
     if choice not in ("да", "yes", "y"):
         return transactions
     choice = input("По возрастанию или по убыванию?\n").strip().lower()
-    reverse = "убывание" in choice
-    return sorted(transactions, key=lambda x: str(x.get("date", "")), reverse=reverse)
+    reverse = "убывани" in choice
+    return sorted(transactions,
+                  key=lambda x: str(x.get("date", "")),
+                  reverse=reverse)
 
 
 def filter_rub(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -59,17 +86,24 @@ def search_interface(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]
 
 def print_result(transactions: list[dict[str, Any]]) -> None:
     """Вывод итогового списка."""
+    print("Распечатываю итоговый список транзакций...\n")
     if not transactions:
         print("Не найдено ни одной транзакции, подходящей под ваши условия фильтрации")
         return
-    print("Распечатываю итоговый список транзакций...\n")
     print(f"Всего банковских операций в выборке: {len(transactions)}")
     for t in transactions:
-        date = str(t.get("date", ""))[:10].replace("-", ".")
-        desc = t.get("description", "")
+        raw_date = str(t.get("date", ""))
+        try:
+            date = get_date(raw_date)
+        except (ValueError, TypeError):
+            date = raw_date
+        print(f"\n{date} {t.get('description', '')}")
+        route = format_route(t)
+        if route:
+            print(route)
         amount = t.get("amount", "")
-        currency = t.get("currency_name", "")
-        print(f"\n{date} {desc}\nСумма: {amount} {currency}")
+        currency = format_currency(t.get("currency_name", ""))
+        print(f"Сумма: {amount} {currency}")
 
 
 def main() -> None:
