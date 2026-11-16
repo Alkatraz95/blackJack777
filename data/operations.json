@@ -1,4 +1,34 @@
-﻿[
-  {"id": 1, "amount": 100, "currency": "RUB"},
-  {"id": 2, "amount": 250, "currency": "USD"}
+[
+  {
+    "id": 87320,
+    "state": "EXECUTED",
+    "date": "2019-08-26T10:50:58.294041",
+    "amount": "31957.58",
+    "currency_name": "RUB",
+    "description": "Перевод организации"
+  },
+  {
+    "id": 154927927,
+    "state": "CANCELED",
+    "date": "2019-10-17T21:51:29.076402",
+    "amount": "67314.70",
+    "currency_name": "USD",
+    "description": "Перевод с карты на карту"
+  },
+  {
+    "id": 64914,
+    "state": "PENDING",
+    "date": "2019-03-23T01:38:48.977053",
+    "amount": "48523.23",
+    "currency_name": "RUB",
+    "description": "Открытие вклада"
+  },
+  {
+    "id": 598736,
+    "state": "EXECUTED",
+    "date": "2020-01-15T14:12:33.003511",
+    "amount": "564231.43",
+    "currency_name": "RUB",
+    "description": "Покупка в «Ленте»"
+  }
 ]
